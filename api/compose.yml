@@ -1,0 +1,31 @@
+networks:
+  traefik_default:
+    external: true
+
+volumes:
+  last_war_data:
+    external: true
+
+services:
+  last-war-api:
+    container_name: last-war-api
+    build:
+      context: api
+      dockerfile: Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.to-https.redirectscheme.scheme=websecure
+      - traefik.http.routers.last-war-api.entrypoints=websecure
+      - traefik.http.routers.last-war-api.rule=Host(`api.${DOMAIN_NAME}`)
+      - traefik.http.services.last-war-api.loadbalancer.server.port=8000
+      - traefik.http.routers.last-war-api-http.entrypoints=web
+      - traefik.http.routers.last-war-api-http.middlewares=to-https
+      - traefik.http.routers.last-war-api.service=last-war-api
+      - traefik.http.routers.last-war-api.tls=true
+      - traefik.http.routers.last-war-api.tls.certresolver=letsencrypt
+    pull_policy: build
+    volumes:
+      - last_war_data:/app/data
+    restart: unless-stopped
+    networks:
+      - traefik_default
